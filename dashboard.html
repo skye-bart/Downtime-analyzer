@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analysis Results - Downtime Analyzer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <span class="logo">&#128200;</span>
+            <span>Downtime Analyzer</span>
+        </div>
+        <div class="nav-links">
+            <a href="{{ url_for('index') }}">&#8592; Upload New File</a>
+        </div>
+    </nav>
+
+    <main class="container">
+        <div class="dashboard-header">
+            <h1>Downtime Analysis Results</h1>
+            <p class="subtitle">Data range: {{ results.date_range }}</p>
+        </div>
+
+        <!-- Key Metrics -->
+        <div class="stats-grid">
+            <div class="stat-card stat-total">
+                <div class="stat-number">{{ results.total_downtime }}</div>
+                <div class="stat-label">Total Minutes</div>
+            </div>
+            <div class="stat-card stat-events">
+                <div class="stat-number">{{ results.total_events }}</div>
+                <div class="stat-label">Total Events</div>
+            </div>
+            <div class="stat-card stat-avg">
+                <div class="stat-number">{{ results.avg_duration }}</div>
+                <div class="stat-label">Avg Minutes/Event</div>
+            </div>
+        </div>
+
+        <!-- Insights Panel -->
+        <div class="insights-card">
+            <h2>&#128161; Key Insights</h2>
+
+            <div class="insight-item insight-pareto">
+                <div class="insight-icon">&#127942;</div>
+                <div class="insight-content">
+                    <h3>Pareto Analysis</h3>
+                    <p>Top 3 failure causes account for <strong>{{ results.top_3_pct }}%</strong> of all downtime ({{ results.top_3_time }} minutes).</p>
+                    <ul>
+                        {% for reason in results.top_3_reasons %}
+                        <li><strong>{{ reason.reason }}</strong>: {{ reason.total_minutes }} minutes</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <div class="insight-item insight-area">
+                <div class="insight-icon">&#9888;&#65039;</div>
+                <div class="insight-content">
+                    <h3>Worst Performing Area</h3>
+                    <p><strong>{{ results.worst_area }}</strong> with {{ results.worst_area_time }} minutes of downtime.</p>
+                </div>
+            </div>
+
+            <div class="insight-item insight-equip">
+                <div class="insight-icon">&#128295;</div>
+                <div class="insight-content">
+                    <h3>Worst Performing Equipment</h3>
+                    <p><strong>{{ results.worst_equip }}</strong> with {{ results.worst_equip_time }} minutes of downtime.</p>
+                </div>
+            </div>
+
+            <div class="insight-item insight-shift">
+                <div class="insight-icon">&#127769;</div>
+                <div class="insight-content">
+                    <h3>Shift Breakdown</h3>
+                    <div class="shift-bars">
+                        {% for shift, minutes in results.shift_summary.items() %}
+                        <div class="shift-bar-item">
+                            <span class="shift-name">{{ shift }}</span>
+                            <div class="shift-bar-wrapper">
+                                <div class="shift-bar" style="width: {{ (minutes / results.total_downtime * 100)|round }}%;"></div>
+                            </div>
+                            <span class="shift-value">{{ minutes }} min</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart -->
+        <div class="chart-card">
+            <h2>&#128202; Visual Dashboard</h2>
+            <img src="{{ url_for('static', filename='charts/' + results.chart_filename) }}" alt="Downtime Analysis Dashboard" class="dashboard-chart">
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>Turn downtime data into action. Built for maintenance teams.</p>
+    </footer>
+</body>
+</html>

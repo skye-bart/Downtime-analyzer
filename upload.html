@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Downtime Analyzer - Upload</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <span class="logo">&#128200;</span>
+            <span>Downtime Analyzer</span>
+        </div>
+    </nav>
+
+    <main class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <div class="upload-card">
+            <div class="upload-icon">&#128200;</div>
+            <h1>Equipment Downtime Analyzer</h1>
+            <p class="subtitle">Upload a CSV of downtime events and get instant insights</p>
+
+            <form method="POST" action="{{ url_for('upload_file') }}" enctype="multipart/form-data" class="upload-form">
+                <div class="file-input-wrapper">
+                    <input type="file" name="file" id="file" accept=".csv" required>
+                    <label for="file" class="file-label">
+                        <span class="file-icon">&#128193;</span>
+                        <span class="file-text">Choose CSV file</span>
+                    </label>
+                </div>
+                <button type="submit" class="btn-primary btn-large">Analyze Downtime</button>
+            </form>
+
+            <div class="sample-section">
+                <p>Not sure about the format?</p>
+                <a href="{{ url_for('download_sample') }}" class="btn-link">&#128229; Download Sample CSV</a>
+            </div>
+
+            <div class="format-info">
+                <h3>Required CSV Columns:</h3>
+                <code>date, shift, area, equipment_tag, reason, duration_minutes</code>
+                <p class="format-example">Example: 2026-08-11, Day, Assembly Line 3, EQ-101, Bearing failure, 45</p>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>Turn downtime data into action. Built for maintenance teams.</p>
+    </footer>
+
+    <script>
+        document.getElementById('file').addEventListener('change', function() {
+            const label = document.querySelector('.file-text');
+            if (this.files && this.files.length > 0) {
+                label.textContent = this.files[0].name;
+            }
+        });
+    </script>
+</body>
+</html>

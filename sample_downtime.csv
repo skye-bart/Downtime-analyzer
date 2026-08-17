@@ -1,0 +1,61 @@
+date,shift,area,equipment_tag,reason,duration_minutes,technician
+2026-08-14,Night,Weld Shop,EQ-925,Sensor malfunction,36,K. Lee
+2026-07-23,Night,Press Shop,EQ-742,Overheating,150,M. Patel
+2026-08-13,Night,Assembly Line 3,EQ-969,Material jam,74,D. Brown
+2026-07-25,Night,Paint Shop,EQ-228,Material jam,56,K. Lee
+2026-07-17,Day,Press Shop,EQ-278,Belt slip/break,22,J. Smith
+2026-07-25,Afternoon,Assembly Line 3,EQ-173,Bearing failure,22,D. Brown
+2026-08-13,Afternoon,Assembly Line 2,EQ-821,Vibration alarm,17,T. Johnson
+2026-07-21,Day,Paint Shop,EQ-498,Hydraulic leak,105,D. Brown
+2026-07-21,Afternoon,Assembly Line 3,EQ-391,Belt slip/break,56,J. Smith
+2026-08-08,Night,Assembly Line 3,EQ-602,Hydraulic leak,70,T. Johnson
+2026-08-02,Day,Paint Shop,EQ-339,Bearing failure,15,T. Johnson
+2026-07-27,Afternoon,Assembly Line 1,EQ-765,Sensor malfunction,172,D. Brown
+2026-07-16,Night,Paint Shop,EQ-351,Operator error,95,M. Patel
+2026-08-06,Day,Paint Shop,EQ-210,Belt slip/break,25,T. Johnson
+2026-08-05,Afternoon,Press Shop,EQ-369,Belt slip/break,24,M. Patel
+2026-07-29,Day,Weld Shop,EQ-255,Operator error,24,D. Brown
+2026-08-08,Day,Assembly Line 3,EQ-849,Planned maintenance,31,J. Smith
+2026-08-08,Afternoon,Paint Shop,EQ-589,Belt slip/break,48,J. Smith
+2026-07-21,Night,Assembly Line 1,EQ-435,Bearing failure,40,M. Patel
+2026-07-26,Afternoon,Paint Shop,EQ-955,Belt slip/break,30,T. Johnson
+2026-07-23,Night,Weld Shop,EQ-946,Tool changeover,57,D. Brown
+2026-07-21,Day,Weld Shop,EQ-406,Belt slip/break,21,K. Lee
+2026-07-18,Night,Press Shop,EQ-483,Belt slip/break,30,D. Brown
+2026-07-29,Afternoon,Weld Shop,EQ-984,Vibration alarm,35,K. Lee
+2026-07-23,Day,Press Shop,EQ-101,Vibration alarm,42,K. Lee
+2026-07-23,Day,Assembly Line 1,EQ-723,Bearing failure,84,M. Patel
+2026-07-15,Afternoon,Paint Shop,EQ-129,Bearing failure,25,T. Johnson
+2026-08-05,Day,Assembly Line 1,EQ-180,Belt slip/break,47,T. Johnson
+2026-07-20,Afternoon,Assembly Line 3,EQ-276,Planned maintenance,55,T. Johnson
+2026-08-06,Night,Assembly Line 1,EQ-521,Sensor malfunction,17,J. Smith
+2026-08-01,Day,Assembly Line 3,EQ-203,Planned maintenance,57,K. Lee
+2026-08-13,Afternoon,Assembly Line 1,EQ-984,Material jam,23,M. Patel
+2026-08-06,Day,Weld Shop,EQ-660,Tool changeover,18,K. Lee
+2026-07-16,Night,Assembly Line 2,EQ-743,Electrical fault,148,T. Johnson
+2026-07-24,Afternoon,Weld Shop,EQ-427,Bearing failure,166,T. Johnson
+2026-08-10,Day,Weld Shop,EQ-198,Sensor malfunction,89,M. Patel
+2026-08-09,Day,Assembly Line 2,EQ-853,Planned maintenance,31,T. Johnson
+2026-07-18,Night,Weld Shop,EQ-241,Bearing failure,19,K. Lee
+2026-08-12,Day,Weld Shop,EQ-608,Vibration alarm,66,T. Johnson
+2026-08-05,Night,Assembly Line 1,EQ-619,Bearing failure,41,K. Lee
+2026-08-09,Afternoon,Assembly Line 2,EQ-745,Belt slip/break,20,M. Patel
+2026-07-18,Day,Press Shop,EQ-391,Hydraulic leak,45,M. Patel
+2026-07-25,Day,Assembly Line 3,EQ-322,Hydraulic leak,16,J. Smith
+2026-07-31,Night,Assembly Line 2,EQ-968,Hydraulic leak,123,T. Johnson
+2026-07-19,Night,Press Shop,EQ-857,Belt slip/break,28,T. Johnson
+2026-08-04,Afternoon,Press Shop,EQ-557,Bearing failure,63,K. Lee
+2026-07-22,Night,Assembly Line 3,EQ-369,Material jam,31,D. Brown
+2026-07-16,Night,Press Shop,EQ-729,Belt slip/break,48,K. Lee
+2026-07-15,Night,Press Shop,EQ-184,Electrical fault,50,D. Brown
+2026-08-04,Afternoon,Assembly Line 1,EQ-752,Hydraulic leak,24,K. Lee
+2026-07-28,Night,Assembly Line 2,EQ-957,Lubrication issue,172,M. Patel
+2026-08-08,Day,Paint Shop,EQ-286,Sensor malfunction,82,K. Lee
+2026-07-15,Night,Press Shop,EQ-186,Hydraulic leak,141,M. Patel
+2026-07-22,Night,Assembly Line 1,EQ-642,Bearing failure,116,J. Smith
+2026-08-06,Night,Assembly Line 3,EQ-147,Operator error,55,T. Johnson
+2026-07-17,Afternoon,Press Shop,EQ-977,Sensor malfunction,129,D. Brown
+2026-07-31,Night,Paint Shop,EQ-725,Bearing failure,19,M. Patel
+2026-07-22,Day,Paint Shop,EQ-277,Operator error,24,T. Johnson
+2026-07-25,Night,Assembly Line 3,EQ-478,Belt slip/break,17,M. Patel
+2026-07-22,Night,Weld Shop,EQ-953,Hydraulic leak,32,M. Patel
