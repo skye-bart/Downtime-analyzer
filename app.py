@@ -7,6 +7,8 @@ import numpy as np
 from datetime import datetime
 import os
 import uuid
+import traceback
+import logging
 
 app = Flask(__name__)
 app.secret_key = 'downtime-analyzer-secret-key'
@@ -19,133 +21,153 @@ ALLOWED_EXTENSIONS = {'csv'}
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(CHART_FOLDER, exist_ok=True)
 
+# Setup logging
+logging.basicConfig(level=logging.ERROR)
+logger = logging.getLogger(__name__)
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def analyze_and_chart(csv_path, session_id):
-    df = pd.read_csv(csv_path)
+    try:
+        # Read CSV with error handling
+        df = pd.read_csv(csv_path)
 
-    # Validate required columns
-    required = {'date', 'shift', 'area', 'equipment_tag', 'reason', 'duration_minutes'}
-    missing = required - set(df.columns)
-    if missing:
-        return None, f"Missing columns: {', '.join(missing)}"
+        # Validate required columns
+        required = {'date', 'shift', 'area', 'equipment_tag', 'reason', 'duration_minutes'}
+        missing = required - set(df.columns)
+        if missing:
+            return None, f"Missing columns: {', '.join(missing)}"
 
-    # Clean data
-    df['duration_minutes'] = pd.to_numeric(df['duration_minutes'], errors='coerce')
-    df = df.dropna(subset=['duration_minutes'])
-    df['duration_minutes'] = df['duration_minutes'].astype(int)
+        # Check if dataframe is empty
+        if len(df) == 0:
+            return None, "CSV file is empty."
 
-    if len(df) == 0:
-        return None, "No valid data found in CSV."
+        # Clean data
+        df['duration_minutes'] = pd.to_numeric(df['duration_minutes'], errors='coerce')
+        df = df.dropna(subset=['duration_minutes'])
+        df['duration_minutes'] = df['duration_minutes'].astype(int)
 
-    # Calculate metrics
-    total_downtime = int(df['duration_minutes'].sum())
-    total_events = len(df)
-    avg_duration = round(df['duration_minutes'].mean(), 1)
+        if len(df) == 0:
+            return None, "No valid data found in CSV. Check that duration_minutes contains numeric values."
 
-    # Reason summary (Pareto)
-    reason_summary = df.groupby('reason')['duration_minutes'].sum().sort_values(ascending=False).reset_index()
-    reason_summary.columns = ['reason', 'total_minutes']
-    reason_summary['cumulative_pct'] = reason_summary['total_minutes'].cumsum() / reason_summary['total_minutes'].sum() * 100
+        # Calculate metrics
+        total_downtime = int(df['duration_minutes'].sum())
+        total_events = len(df)
+        avg_duration = round(df['duration_minutes'].mean(), 1)
 
-    # Shift summary
-    shift_order = ['Day', 'Afternoon', 'Night']
-    shift_summary = df.groupby('shift')['duration_minutes'].sum()
-    shift_summary = shift_summary.reindex([s for s in shift_order if s in shift_summary.index])
+        # Reason summary (Pareto)
+        reason_summary = df.groupby('reason')['duration_minutes'].sum().sort_values(ascending=False).reset_index()
+        reason_summary.columns = ['reason', 'total_minutes']
+        reason_summary['cumulative_pct'] = reason_summary['total_minutes'].cumsum() / reason_summary['total_minutes'].sum() * 100
 
-    # Area summary
-    area_summary = df.groupby('area')['duration_minutes'].sum().sort_values(ascending=True)
+        # Shift summary
+        shift_order = ['Day', 'Afternoon', 'Night']
+        shift_summary = df.groupby('shift')['duration_minutes'].sum()
+        shift_summary = shift_summary.reindex([s for s in shift_order if s in shift_summary.index])
 
-    # Equipment summary
-    equip_summary = df.groupby('equipment_tag')['duration_minutes'].sum().sort_values(ascending=False).head(10)
+        # Area summary
+        area_summary = df.groupby('area')['duration_minutes'].sum().sort_values(ascending=True)
 
-    # Top insights
-    top_3_reasons = reason_summary.head(3)
-    top_3_time = int(top_3_reasons['total_minutes'].sum())
-    top_3_pct = round(top_3_time / total_downtime * 100, 1)
-    worst_area = area_summary.idxmax() if len(area_summary) > 0 else "N/A"
-    worst_area_time = int(area_summary.max()) if len(area_summary) > 0 else 0
-    worst_equip = equip_summary.index[0] if len(equip_summary) > 0 else "N/A"
-    worst_equip_time = int(equip_summary.iloc[0]) if len(equip_summary) > 0 else 0
+        # Equipment summary
+        equip_summary = df.groupby('equipment_tag')['duration_minutes'].sum().sort_values(ascending=False).head(10)
 
-    # Generate charts
-    fig, axes = plt.subplots(2, 2, figsize=(14, 11))
-    fig.suptitle('Equipment Downtime Analysis Dashboard', fontsize=16, fontweight='bold', y=0.98)
+        # Top insights
+        top_3_reasons = reason_summary.head(3)
+        top_3_time = int(top_3_reasons['total_minutes'].sum())
+        top_3_pct = round(top_3_time / total_downtime * 100, 1)
+        worst_area = area_summary.idxmax() if len(area_summary) > 0 else "N/A"
+        worst_area_time = int(area_summary.max()) if len(area_summary) > 0 else 0
+        worst_equip = equip_summary.index[0] if len(equip_summary) > 0 else "N/A"
+        worst_equip_time = int(equip_summary.iloc[0]) if len(equip_summary) > 0 else 0
 
-    # Chart 1: Pareto
-    ax1 = axes[0, 0]
-    bars = ax1.bar(range(len(reason_summary)), reason_summary['total_minutes'], color='#2563eb', alpha=0.8)
-    ax1.set_xticks(range(len(reason_summary)))
-    ax1.set_xticklabels(reason_summary['reason'], rotation=45, ha='right', fontsize=8)
-    ax1.set_ylabel('Total Downtime (minutes)', color='#2563eb')
-    ax1.tick_params(axis='y', labelcolor='#2563eb')
-    ax1_twin = ax1.twinx()
-    ax1_twin.plot(range(len(reason_summary)), reason_summary['cumulative_pct'], color='#dc2626', marker='o', linewidth=2, markersize=4)
-    ax1_twin.axhline(y=80, color='#dc2626', linestyle='--', alpha=0.5)
-    ax1_twin.set_ylabel('Cumulative %', color='#dc2626')
-    ax1_twin.tick_params(axis='y', labelcolor='#dc2626')
-    ax1_twin.set_ylim(0, 105)
-    ax1.set_title('Pareto Analysis: Downtime by Reason', fontweight='bold', pad=10)
-    ax1.grid(axis='y', alpha=0.3)
+        # Generate charts
+        fig, axes = plt.subplots(2, 2, figsize=(14, 11))
+        fig.suptitle('Equipment Downtime Analysis Dashboard', fontsize=16, fontweight='bold', y=0.98)
 
-    # Chart 2: By Shift
-    ax2 = axes[0, 1]
-    colors_shift = ['#16a34a', '#ca8a04', '#1e293b']
-    bars2 = ax2.bar(shift_summary.index, shift_summary.values, color=colors_shift[:len(shift_summary)], alpha=0.85, edgecolor='white', linewidth=1.5)
-    ax2.set_ylabel('Total Downtime (minutes)')
-    ax2.set_title('Downtime by Shift', fontweight='bold', pad=10)
-    ax2.grid(axis='y', alpha=0.3)
-    for bar in bars2:
-        height = bar.get_height()
-        ax2.annotate(f'{int(height)} min', xy=(bar.get_x() + bar.get_width()/2, height), xytext=(0, 3), textcoords="offset points", ha='center', va='bottom', fontsize=9, fontweight='bold')
+        # Chart 1: Pareto
+        ax1 = axes[0, 0]
+        bars = ax1.bar(range(len(reason_summary)), reason_summary['total_minutes'], color='#2563eb', alpha=0.8)
+        ax1.set_xticks(range(len(reason_summary)))
+        ax1.set_xticklabels(reason_summary['reason'], rotation=45, ha='right', fontsize=8)
+        ax1.set_ylabel('Total Downtime (minutes)', color='#2563eb')
+        ax1.tick_params(axis='y', labelcolor='#2563eb')
+        ax1_twin = ax1.twinx()
+        ax1_twin.plot(range(len(reason_summary)), reason_summary['cumulative_pct'], color='#dc2626', marker='o', linewidth=2, markersize=4)
+        ax1_twin.axhline(y=80, color='#dc2626', linestyle='--', alpha=0.5)
+        ax1_twin.set_ylabel('Cumulative %', color='#dc2626')
+        ax1_twin.tick_params(axis='y', labelcolor='#dc2626')
+        ax1_twin.set_ylim(0, 105)
+        ax1.set_title('Pareto Analysis: Downtime by Reason', fontweight='bold', pad=10)
+        ax1.grid(axis='y', alpha=0.3)
 
-    # Chart 3: By Area
-    ax3 = axes[1, 0]
-    colors_area = plt.cm.RdYlBu_r(np.linspace(0.2, 0.8, len(area_summary)))
-    bars3 = ax3.barh(area_summary.index, area_summary.values, color=colors_area, alpha=0.85, edgecolor='white', linewidth=1.5)
-    ax3.set_xlabel('Total Downtime (minutes)')
-    ax3.set_title('Downtime by Area/Zone', fontweight='bold', pad=10)
-    ax3.grid(axis='x', alpha=0.3)
-    for bar in bars3:
-        width = bar.get_width()
-        ax3.annotate(f'{int(width)}', xy=(width, bar.get_y() + bar.get_height()/2), xytext=(5, 0), textcoords="offset points", ha='left', va='center', fontsize=9, fontweight='bold')
+        # Chart 2: By Shift
+        ax2 = axes[0, 1]
+        colors_shift = ['#16a34a', '#ca8a04', '#1e293b']
+        bars2 = ax2.bar(shift_summary.index, shift_summary.values, color=colors_shift[:len(shift_summary)], alpha=0.85, edgecolor='white', linewidth=1.5)
+        ax2.set_ylabel('Total Downtime (minutes)')
+        ax2.set_title('Downtime by Shift', fontweight='bold', pad=10)
+        ax2.grid(axis='y', alpha=0.3)
+        for bar in bars2:
+            height = bar.get_height()
+            ax2.annotate(f'{int(height)} min', xy=(bar.get_x() + bar.get_width()/2, height), xytext=(0, 3), textcoords="offset points", ha='center', va='bottom', fontsize=9, fontweight='bold')
 
-    # Chart 4: Top Equipment
-    ax4 = axes[1, 1]
-    bars4 = ax4.bar(range(len(equip_summary)), equip_summary.values, color='#7c3aed', alpha=0.85, edgecolor='white', linewidth=1.5)
-    ax4.set_xticks(range(len(equip_summary)))
-    ax4.set_xticklabels(equip_summary.index, rotation=45, ha='right', fontsize=8)
-    ax4.set_ylabel('Total Downtime (minutes)')
-    ax4.set_title('Top 10 Equipment by Downtime', fontweight='bold', pad=10)
-    ax4.grid(axis='y', alpha=0.3)
-    for bar in bars4:
-        height = bar.get_height()
-        ax4.annotate(f'{int(height)}', xy=(bar.get_x() + bar.get_width()/2, height), xytext=(0, 3), textcoords="offset points", ha='center', va='bottom', fontsize=8, fontweight='bold')
+        # Chart 3: By Area
+        ax3 = axes[1, 0]
+        colors_area = plt.cm.RdYlBu_r(np.linspace(0.2, 0.8, len(area_summary)))
+        bars3 = ax3.barh(area_summary.index, area_summary.values, color=colors_area, alpha=0.85, edgecolor='white', linewidth=1.5)
+        ax3.set_xlabel('Total Downtime (minutes)')
+        ax3.set_title('Downtime by Area/Zone', fontweight='bold', pad=10)
+        ax3.grid(axis='x', alpha=0.3)
+        for bar in bars3:
+            width = bar.get_width()
+            ax3.annotate(f'{int(width)}', xy=(width, bar.get_y() + bar.get_height()/2), xytext=(5, 0), textcoords="offset points", ha='left', va='center', fontsize=9, fontweight='bold')
 
-    plt.tight_layout(rect=[0, 0, 1, 0.96])
-    chart_filename = f'dashboard_{session_id}.png'
-    chart_path = os.path.join(CHART_FOLDER, chart_filename)
-    plt.savefig(chart_path, dpi=150, bbox_inches='tight', facecolor='white')
-    plt.close(fig)
+        # Chart 4: Top Equipment
+        ax4 = axes[1, 1]
+        bars4 = ax4.bar(range(len(equip_summary)), equip_summary.values, color='#7c3aed', alpha=0.85, edgecolor='white', linewidth=1.5)
+        ax4.set_xticks(range(len(equip_summary)))
+        ax4.set_xticklabels(equip_summary.index, rotation=45, ha='right', fontsize=8)
+        ax4.set_ylabel('Total Downtime (minutes)')
+        ax4.set_title('Top 10 Equipment by Downtime', fontweight='bold', pad=10)
+        ax4.grid(axis='y', alpha=0.3)
+        for bar in bars4:
+            height = bar.get_height()
+            ax4.annotate(f'{int(height)}', xy=(bar.get_x() + bar.get_width()/2, height), xytext=(0, 3), textcoords="offset points", ha='center', va='bottom', fontsize=8, fontweight='bold')
 
-    results = {
-        'total_downtime': total_downtime,
-        'total_events': total_events,
-        'avg_duration': avg_duration,
-        'top_3_reasons': top_3_reasons.to_dict('records'),
-        'top_3_time': top_3_time,
-        'top_3_pct': top_3_pct,
-        'shift_summary': shift_summary.to_dict(),
-        'worst_area': worst_area,
-        'worst_area_time': worst_area_time,
-        'worst_equip': worst_equip,
-        'worst_equip_time': worst_equip_time,
-        'chart_filename': chart_filename,
-        'date_range': f"{df['date'].min()} to {df['date'].max()}"
-    }
+        plt.tight_layout(rect=[0, 0, 1, 0.96])
+        chart_filename = f'dashboard_{session_id}.png'
+        chart_path = os.path.join(CHART_FOLDER, chart_filename)
+        plt.savefig(chart_path, dpi=150, bbox_inches='tight', facecolor='white')
+        plt.close(fig)
 
-    return results, None
+        results = {
+            'total_downtime': total_downtime,
+            'total_events': total_events,
+            'avg_duration': avg_duration,
+            'top_3_reasons': top_3_reasons.to_dict('records'),
+            'top_3_time': top_3_time,
+            'top_3_pct': top_3_pct,
+            'shift_summary': shift_summary.to_dict(),
+            'worst_area': worst_area,
+            'worst_area_time': worst_area_time,
+            'worst_equip': worst_equip,
+            'worst_equip_time': worst_equip_time,
+            'chart_filename': chart_filename,
+            'date_range': f"{df['date'].min()} to {df['date'].max()}"
+        }
+
+        return results, None
+
+    except pd.errors.EmptyDataError:
+        logger.error("CSV file is empty")
+        return None, "CSV file is empty. Please upload a file with data."
+    except pd.errors.ParserError as e:
+        logger.error(f"CSV parsing error: {str(e)}")
+        return None, f"Error parsing CSV file: {str(e)}. Ensure it's a valid CSV."
+    except Exception as e:
+        logger.error(f"Unexpected error: {traceback.format_exc()}")
+        return None, f"An unexpected error occurred: {str(e)}"
 
 @app.route('/')
 def index():
@@ -166,16 +188,24 @@ def upload_file():
         session_id = str(uuid.uuid4())[:8]
         filename = f"{session_id}_{file.filename}"
         filepath = os.path.join(UPLOAD_FOLDER, filename)
-        file.save(filepath)
+        
+        try:
+            file.save(filepath)
+            results, error = analyze_and_chart(filepath, session_id)
 
-        results, error = analyze_and_chart(filepath, session_id)
+            if error:
+                flash(error, 'error')
+                if os.path.exists(filepath):
+                    os.remove(filepath)
+                return redirect(url_for('index'))
 
-        if error:
-            flash(error, 'error')
-            os.remove(filepath)
+            return render_template('dashboard.html', results=results)
+        except Exception as e:
+            logger.error(f"File upload error: {traceback.format_exc()}")
+            flash(f'An error occurred during upload: {str(e)}', 'error')
+            if os.path.exists(filepath):
+                os.remove(filepath)
             return redirect(url_for('index'))
-
-        return render_template('dashboard.html', results=results)
     else:
         flash('Please upload a CSV file.', 'error')
         return redirect(url_for('index'))
